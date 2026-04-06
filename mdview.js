@@ -5,7 +5,7 @@
    - mdview prune
    - mdview serve [--port 4323]
 
-   Registry: $MDVIEW_REG_DIR/registry.json (defaults to ~/.openclaw/mdview/registry.json)
+   Registry: $MDVIEW_REG_DIR/registry.json (defaults to ~/.local/share/mdview/registry.json)
 */
 
 'use strict';
@@ -17,7 +17,7 @@ const crypto = require('crypto');
 const os = require('os');
 const { execFile } = require('child_process');
 
-const REG_DIR = process.env.MDVIEW_REG_DIR || path.join(os.homedir(), '.openclaw', 'mdview');
+const REG_DIR = process.env.MDVIEW_REG_DIR || path.join(os.homedir(), '.local', 'share', 'mdview');
 const REG_PATH = path.join(REG_DIR, 'registry.json');
 const REG_LOCK_PATH = path.join(REG_DIR, 'registry.lock');
 const DEFAULT_BASEPATH = (process.env.MDVIEW_BASEPATH || '/mdview').replace(/\/$/, '');

@@ -22,7 +22,7 @@ Copy `.env.example` values into your launchd environment or shell as needed:
 - `MDVIEW_ALLOW_LOGIN`: exact Tailscale login to allow
 - `MDVIEW_ALLOW_DNSNAMES`: comma-separated allowed Tailscale DNS names
 - `MDVIEW_ACCESS_LOG`: access log path, default `/tmp/mdview.access.log`
-- `MDVIEW_REG_DIR`: registry directory, default `${HOME}/.openclaw/mdview`
+- `MDVIEW_REG_DIR`: registry directory, default `${HOME}/.local/share/mdview`
 - `TAILSCALE_BIN`: path to the `tailscale` binary used for `whois` and host auto-detection
 
 ## Share a file (24h expiry by default)
@@ -52,7 +52,7 @@ node mdview.js prune
 
 ## Registry
 
-`${MDVIEW_REG_DIR:-$HOME/.openclaw/mdview}/registry.json`
+`${MDVIEW_REG_DIR:-$HOME/.local/share/mdview}/registry.json`
 
 - Stores `token -> {path, createdAtMs, expiresAtMs, size}`
 - Tokens are random 256-bit base64url strings
