@@ -22,7 +22,7 @@ Copy `.env.example` values into your launchd environment or shell as needed:
 - `MDVIEW_ALLOW_LOGIN`: exact Tailscale login to allow
 - `MDVIEW_ALLOW_DNSNAMES`: comma-separated allowed Tailscale DNS names
 - `MDVIEW_ACCESS_LOG`: access log path, default `/tmp/mdview.access.log`
-- `MDVIEW_REG_DIR`: registry directory, default `${HOME}/.local/share/mdview`
+- `MDVIEW_REG_DIR`: registry directory, default `${HOME}/.openclaw/mdview`
 - `TAILSCALE_BIN`: path to the `tailscale` binary used for `whois` and host auto-detection
 
 ## Share a file (24h expiry by default)
@@ -31,14 +31,15 @@ Copy `.env.example` values into your launchd environment or shell as needed:
 node mdview.js share /absolute/path/to/file.md --ttl-hours 24
 ```
 
-## Identity binding (hardening)
+## Identity binding
 
-The server can require that requests come from specific Tailscale identity/device:
-- `MDVIEW_ALLOW_LOGIN` (exact login name from `tailscale whois`)
-- `MDVIEW_ALLOW_DNSNAMES` (comma-separated DNS names from `tailscale status`, including trailing dot)
+By default, all requests must come from an authenticated Tailscale user. Unauthenticated requests are rejected with 403.
 
-This is enforced by calling `tailscale whois --json <clientIP>` (cached for 5 minutes).
-Forwarded identity headers are only trusted when the request arrives from a local loopback proxy, which is the intended Tailscale Serve deployment shape.
+To restrict access further:
+- `MDVIEW_ALLOW_LOGIN` — only allow a specific Tailscale login (exact match from `tailscale whois`). Set to `*` to allow any authenticated tailnet user (the default behaviour).
+- `MDVIEW_ALLOW_DNSNAMES` — only allow specific Tailscale device DNS names (comma-separated, including trailing dot)
+
+Identity is verified via `tailscale whois --json <clientIP>` (cached for 5 minutes). Tailscale Serve forwarded headers are trusted only when the request arrives from a loopback address.
 
 Outputs a URL like:
 `https://<your-device-hostname>/mdview/md/<TOKEN>`
@@ -52,7 +53,7 @@ node mdview.js prune
 
 ## Registry
 
-`${MDVIEW_REG_DIR:-$HOME/.local/share/mdview}/registry.json`
+`${MDVIEW_REG_DIR:-$HOME/.openclaw/mdview}/registry.json`
 
 - Stores `token -> {path, createdAtMs, expiresAtMs, size}`
 - Tokens are random 256-bit base64url strings

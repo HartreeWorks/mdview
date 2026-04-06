@@ -228,7 +228,8 @@ async function cmdServe(port) {
     typographer: true
   });
 
-  // Hardening: bind access to Tailscale identity.
+  // Identity enforcement: all requests must come from an authenticated Tailscale user.
+  // ALLOW_LOGIN / ALLOW_DNSNAMES narrow access further (set ALLOW_LOGIN=* to allow any tailnet user).
   // Preferred: trust Tailscale Serve forwarded headers (when present).
   // Fallback: tailscale whois on client IP (less reliable under proxies).
   const ALLOW_LOGIN = process.env.MDVIEW_ALLOW_LOGIN || '';
@@ -282,7 +283,11 @@ async function cmdServe(port) {
   }
 
   function checkIdentity(login, dns, res) {
-    if (ALLOW_LOGIN && login !== ALLOW_LOGIN) {
+    if (!login) {
+      res.status(403).type('text/plain').send('Forbidden');
+      return false;
+    }
+    if (ALLOW_LOGIN && ALLOW_LOGIN !== '*' && login !== ALLOW_LOGIN) {
       res.status(403).type('text/plain').send('Forbidden');
       return false;
     }
@@ -294,7 +299,6 @@ async function cmdServe(port) {
   }
 
   async function enforceIdentity(req, res) {
-    if (!ALLOW_LOGIN && ALLOW_DNSNAMES.length === 0) return true; // disabled
 
     // Preferred: Tailscale Serve forwarded header (present in our logs).
     const hdrLogin = (req.headers['tailscale-user-login'] || '').toString();
