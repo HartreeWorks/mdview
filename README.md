@@ -1,6 +1,6 @@
-# mdview (Mini markdown viewer)
+# mdview
 
-Capability-link markdown viewer for reading local markdown files on a phone via Tailscale.
+Share local markdown files as rendered HTML pages via short-lived, secret URLs. Designed to run on a [Tailscale](https://tailscale.com/) node and exposed via Tailscale Serve.
 
 ## Server
 
