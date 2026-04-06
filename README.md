@@ -19,10 +19,10 @@ Copy `.env.example` values into your launchd environment or shell as needed:
 - `MDVIEW_HOST`: public hostname used in generated share URLs. If unset, `mdview` tries to auto-detect the Tailscale DNS name via `tailscale status --json`.
 - `MDVIEW_BASEPATH`: public path prefix, default `/mdview`
 - `MDVIEW_BIND`: local bind address for the server, default `127.0.0.1`
-- `MDVIEW_ALLOW_LOGIN`: exact Tailscale login to allow
-- `MDVIEW_ALLOW_DNSNAMES`: comma-separated allowed Tailscale DNS names
+- `MDVIEW_ALLOW_LOGIN`: Tailscale login permitted to access shared files (required)
+- `MDVIEW_ALLOW_DNSNAMES`: comma-separated Tailscale device DNS names permitted to access shared files (required)
 - `MDVIEW_ACCESS_LOG`: access log path, default `/tmp/mdview.access.log`
-- `MDVIEW_REG_DIR`: registry directory, default `${HOME}/.openclaw/mdview`
+- `MDVIEW_REG_DIR`: registry directory (required)
 - `TAILSCALE_BIN`: path to the `tailscale` binary used for `whois` and host auto-detection
 
 ## Share a file (24h expiry by default)
@@ -31,15 +31,13 @@ Copy `.env.example` values into your launchd environment or shell as needed:
 node mdview.js share /absolute/path/to/file.md --ttl-hours 24
 ```
 
-## Identity binding
+## Security
 
-By default, all requests must come from an authenticated Tailscale user. Unauthenticated requests are rejected with 403.
+Three layers protect shared files:
 
-To restrict access further:
-- `MDVIEW_ALLOW_LOGIN` — only allow a specific Tailscale login (exact match from `tailscale whois`). Set to `*` to allow any authenticated tailnet user (the default behaviour).
-- `MDVIEW_ALLOW_DNSNAMES` — only allow specific Tailscale device DNS names (comma-separated, including trailing dot)
-
-Identity is verified via `tailscale whois --json <clientIP>` (cached for 5 minutes). Tailscale Serve forwarded headers are trusted only when the request arrives from a loopback address.
+1. **Secret URLs.** Share tokens are 256-bit random base64url strings. URLs are unguessable and expire after a configurable TTL (default 24 hours).
+2. **Tailscale identity.** Every request must come from an authenticated Tailscale user whose login matches `MDVIEW_ALLOW_LOGIN` and whose device DNS name is in `MDVIEW_ALLOW_DNSNAMES`. Requests that fail either check get a 403. Identity is verified via `tailscale whois --json <clientIP>` (cached for 5 minutes). When the server sits behind Tailscale Serve, forwarded identity headers are trusted only from loopback.
+3. **No path traversal.** The server only serves files that have been explicitly registered via `mdview share`. It does not accept file paths over HTTP.
 
 Outputs a URL like:
 `https://<your-device-hostname>/mdview/md/<TOKEN>`
@@ -53,7 +51,7 @@ node mdview.js prune
 
 ## Registry
 
-`${MDVIEW_REG_DIR:-$HOME/.openclaw/mdview}/registry.json`
+`$MDVIEW_REG_DIR/registry.json`
 
 - Stores `token -> {path, createdAtMs, expiresAtMs, size}`
 - Tokens are random 256-bit base64url strings

@@ -17,7 +17,11 @@ const crypto = require('crypto');
 const os = require('os');
 const { execFile } = require('child_process');
 
-const REG_DIR = process.env.MDVIEW_REG_DIR || path.join(os.homedir(), '.local', 'share', 'mdview');
+const REG_DIR = process.env.MDVIEW_REG_DIR;
+if (!REG_DIR) {
+  console.error('MDVIEW_REG_DIR must be set.');
+  process.exit(1);
+}
 const REG_PATH = path.join(REG_DIR, 'registry.json');
 const REG_LOCK_PATH = path.join(REG_DIR, 'registry.lock');
 const DEFAULT_BASEPATH = (process.env.MDVIEW_BASEPATH || '/mdview').replace(/\/$/, '');
@@ -228,15 +232,18 @@ async function cmdServe(port) {
     typographer: true
   });
 
-  // Identity enforcement: all requests must come from an authenticated Tailscale user.
-  // ALLOW_LOGIN / ALLOW_DNSNAMES narrow access further (set ALLOW_LOGIN=* to allow any tailnet user).
-  // Preferred: trust Tailscale Serve forwarded headers (when present).
-  // Fallback: tailscale whois on client IP (less reliable under proxies).
+  // Identity enforcement: MDVIEW_ALLOW_LOGIN and MDVIEW_ALLOW_DNSNAMES are required.
+  // Requests must match both to be served.
   const ALLOW_LOGIN = process.env.MDVIEW_ALLOW_LOGIN || '';
   const ALLOW_DNSNAMES = (process.env.MDVIEW_ALLOW_DNSNAMES || '')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
+
+  if (!ALLOW_LOGIN || ALLOW_DNSNAMES.length === 0) {
+    console.error('MDVIEW_ALLOW_LOGIN and MDVIEW_ALLOW_DNSNAMES must both be set.');
+    process.exit(1);
+  }
 
   const whoisCache = new Map(); // ip -> {ts, data}
   const WHOIS_CACHE_MS = 5 * 60 * 1000;
@@ -287,11 +294,11 @@ async function cmdServe(port) {
       res.status(403).type('text/plain').send('Forbidden');
       return false;
     }
-    if (ALLOW_LOGIN && ALLOW_LOGIN !== '*' && login !== ALLOW_LOGIN) {
+    if (login !== ALLOW_LOGIN) {
       res.status(403).type('text/plain').send('Forbidden');
       return false;
     }
-    if (ALLOW_DNSNAMES.length && !ALLOW_DNSNAMES.includes(dns)) {
+    if (!ALLOW_DNSNAMES.includes(dns)) {
       res.status(403).type('text/plain').send('Forbidden');
       return false;
     }
